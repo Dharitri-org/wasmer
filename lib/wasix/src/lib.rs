@@ -102,11 +102,11 @@ pub use crate::{
         WasiEnv, WasiEnvBuilder, WasiEnvInit, WasiFunctionEnv, WasiInstanceHandles,
         WasiStateCreationError, ALL_RIGHTS,
     },
-    syscalls::{rewind, rewind_ext, types, unwind},
+    syscalls::{journal::wait_for_snapshot, rewind, rewind_ext, types, unwind},
     utils::is_wasix_module,
     utils::{
         get_wasi_version, get_wasi_versions, is_wasi_module,
-        store::{capture_instance_snapshot, restore_instance_snapshot, InstanceSnapshot},
+        store::{capture_store_snapshot, restore_store_snapshot, StoreSnapshot},
         WasiVersion,
     },
 };
@@ -724,8 +724,6 @@ fn import_object_for_all_wasi_versions(
             } else {
                 Box::new(stub_initializer) as ModuleInitializer
             };
-
-            let init = init;
         } else {
             // Prevents unused warning.
             let _ = module;

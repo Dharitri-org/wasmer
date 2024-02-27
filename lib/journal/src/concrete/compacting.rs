@@ -252,9 +252,9 @@ impl CompactingJournalTx {
         // Read all the events and feed them into the filtered journal and then
         // strip off the filter so that its a normal journal again
         while let Some(entry) = replay_rx.read()? {
-            let amt = new_journal.write(entry)?;
-            if amt > 0 {
-                result.total_size += amt;
+            let res = new_journal.write(entry.into_inner())?;
+            if res.record_size() > 0 {
+                result.total_size += res.record_size();
                 result.total_events += 1;
             }
         }
@@ -280,7 +280,7 @@ impl CompactingJournalTx {
         // extra events are added we strip off the filter again
         let replay_rx = state.inner_rx.as_restarted()?;
         while let Some(entry) = replay_rx.read()? {
-            new_journal.write(entry)?;
+            new_journal.write(entry.into_inner())?;
         }
         let new_journal = new_journal.into_inner();
 
@@ -301,7 +301,7 @@ impl CompactingJournalTx {
 }
 
 impl WritableJournal for CompactingJournalTx {
-    fn write<'a>(&'a self, entry: JournalEntry<'a>) -> anyhow::Result<u64> {
+    fn write<'a>(&'a self, entry: JournalEntry<'a>) -> anyhow::Result<LogWriteResult> {
         let mut state = self.state.lock().unwrap();
         let event_index = state.event_index;
         state.event_index += 1;
@@ -363,7 +363,7 @@ impl WritableJournal for CompactingJournalTx {
                 state
                     .descriptors
                     .entry(lookup)
-                    .or_insert_with(Default::default)
+                    .or_default()
                     .events
                     .push(event_index);
 
@@ -394,10 +394,7 @@ impl WritableJournal for CompactingJournalTx {
                     .or_else(|| state.stdio_descriptors.get(fd).cloned());
 
                 if let Some(lookup) = lookup {
-                    let state = state
-                        .descriptors
-                        .entry(lookup)
-                        .or_insert_with(Default::default);
+                    let state = state.descriptors.entry(lookup).or_default();
                     state.events.push(event_index);
                 } else {
                     state.whitelist.insert(event_index);
@@ -425,10 +422,7 @@ impl WritableJournal for CompactingJournalTx {
 
                 // Update the state
                 if let Some(lookup) = lookup {
-                    let state = state
-                        .descriptors
-                        .entry(lookup)
-                        .or_insert_with(Default::default);
+                    let state = state.descriptors.entry(lookup).or_default();
                     if let JournalEntry::FileDescriptorWriteV1 { offset, data, .. } = &entry {
                         state.write_map.insert(
                             MemoryRange {
@@ -517,7 +511,7 @@ impl CompactingJournal {
 }
 
 impl ReadableJournal for CompactingJournalRx {
-    fn read(&self) -> anyhow::Result<Option<JournalEntry<'_>>> {
+    fn read(&self) -> anyhow::Result<Option<LogReadResult<'_>>> {
         self.inner.read()
     }
 
@@ -527,13 +521,13 @@ impl ReadableJournal for CompactingJournalRx {
 }
 
 impl WritableJournal for CompactingJournal {
-    fn write<'a>(&'a self, entry: JournalEntry<'a>) -> anyhow::Result<u64> {
+    fn write<'a>(&'a self, entry: JournalEntry<'a>) -> anyhow::Result<LogWriteResult> {
         self.tx.write(entry)
     }
 }
 
 impl ReadableJournal for CompactingJournal {
-    fn read(&self) -> anyhow::Result<Option<JournalEntry<'_>>> {
+    fn read(&self) -> anyhow::Result<Option<LogReadResult<'_>>> {
         self.rx.read()
     }
 

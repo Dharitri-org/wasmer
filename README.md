@@ -26,7 +26,7 @@ Once installed, you will be able to run any wasm module (_including Nginx!_):
 wasmer run examples/nginx/nginx.wasm -- -p examples/nginx -c nginx.conf
 ```
 
-## Building & Running
+## Building & Running.
 
 To build this project you will need Rust and Cargo.
 

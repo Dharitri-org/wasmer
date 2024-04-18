@@ -47,7 +47,7 @@ It is used to run software fast, universally and safely: standalone applications
 - [Contribute](#contribute)
 - [Community](#community)
 
-## Quickstart
+## Quickstart.
 
 Get started with Wasmer:
 

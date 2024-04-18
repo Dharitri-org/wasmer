@@ -40,7 +40,7 @@
 
 It is used to run software fast, universally and safely: standalone applications and universal libraries.
 
-## Contents.
+## Contents
 
 - [Quickstart](#quickstart)
 - [Language Integrations](#language-integrations)
